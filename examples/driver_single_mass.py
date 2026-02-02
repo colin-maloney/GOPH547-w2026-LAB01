@@ -1,5 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
+import sys, pathlib 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from src.goph547lab01.gravity import ( gravity_potential_point, gravity_effect_point)
 
 def gravity_potential_point(x, xm, m, G=6.674e-11):
     x = np.array(x, dtype=float)

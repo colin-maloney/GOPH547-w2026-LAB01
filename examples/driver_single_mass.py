@@ -1,51 +1,95 @@
-import numpy as np 
-import matplotlib.pyplot as plt 
+import numpy as np
+import matplotlib.pyplot as plt
 
-from goph547lab01.gravity import ( gravity_potential_point, gravity_effect_point) 
+def gravity_potential_point(x, xm, m, G=6.674e-11):
+    x = np.array(x, dtype=float)
+    xm = np.array(xm, dtype=float)
+    r = np.linalg.norm(x - xm)
+    return G * m / r
 
-def main(): 
+def gravity_effect_point(x, xm, m, G=6.674e-11):
+    x = np.array(x, dtype=float)
+    xm = np.array(xm, dtype=float)
+    r = np.linalg.norm(x - xm)
+    return G * m * (x[2] - xm[2]) / r**3
 
-    m = 1.0e7 
-    xm = np.array((0.0, 0.0, -10.0)) 
+def compute_fields(xg, yg, zp, xm, m):
+    U = np.zeros((xg.shape[0], xg.shape[1], len(zp)))
+    g = np.zeros_like(U)
 
-    x_25, y_25 = np.meshgrid( np.linspace(-100.0, 100.0, 41), 
-                            np.linspace(-100, 100, 9)) 
+    for k, z in enumerate(zp):
+        for i in range(xg.shape[0]):
+            for j in range(xg.shape[1]):
+                x_obs = np.array([xg[i, j], yg[i, j], z])
+                U[i, j, k] = gravity_potential_point(x_obs, xm, m)
+                g[i, j, k] = gravity_effect_point(x_obs, xm, m)
 
-    x_5, y_5 = np.meshgrid(np.linspace(-100.0, 100.0, 41), 
-                            np.linspace(-100.0, 100.0, 41)) 
+    return U, g
 
-    zp = [0.0, 10.0, 100.0] 
+def main():
 
-    U_25 = np.zeros((x_25.shape[0], x_25.shape[1],len(zp) )) 
-    g_25 = np.zeros((x_25.shape[0], x_25.shape[1], len(zp))) 
-    xs = x_25[0, :] 
-    ys = y_25[:, 0] 
+    m = 1.0e7
+    xm = np.array((0.0, 0.0, -10.0))
+    zp = [0.0, 10.0, 100.0]
 
-for k, z in enumerate(zp):
-    for i in range(x_25.shape[0]):
-        for j in range(x_25.shape[1]):
-            x_obs = np.array([x_25[i, j], y_25[i, j], z])
+    
+    x_25, y_25 = np.meshgrid(
+        np.linspace(-100.0, 100.0, 41),
+        np.linspace(-100.0, 100.0, 41),
+    )
+    U_25, g_25 = compute_fields(x_25, y_25, zp, xm, m)
 
-            U_25[i, j, k] = gravity_potential_point(x_obs, xm, m)
-            g_25[i, j, k] = gravity_effect_point(x_obs, xm, m) 
+   
+    x_5, y_5 = np.meshgrid(
+        np.linspace(-100.0, 100.0, 201),
+        np.linspace(-100.0, 100.0, 201),
+    )
+    U_5, g_5 = compute_fields(x_5, y_5, zp, xm, m)
 
-k = 0  # index for z = 0
+   # set colour bar lims
+    Umin = min(U_25.min(), U_5.min())
+    Umax = max(U_25.max(), U_5.max())
 
-plt.figure(figsize=(6, 5))
-cs = plt.contourf(x_25, y_25, U_25[:, :, k], levels=30, cmap="viridis")
-plt.colorbar(cs, label="Gravity potential (m²/s²)")
-plt.xlabel("x (m)")
-plt.ylabel("y (m)")
-plt.title(f"Gravity potential at z = {zp[k]} m")
-plt.axis("equal")
-plt.show()
+    gmin = min(g_25.min(), g_5.min())
+    gmax = max(g_25.max(), g_5.max())
 
+    # plot function
+    def plot_figure(xg, yg, U, g, title_prefix):
 
-plt.figure(figsize=(6, 5))
-cs = plt.contourf(x_25, y_25, g_25[:, :, k], levels=30, cmap="seismic")
-plt.colorbar(cs, label="Gravity effect $g_z$ (m/s²)")
-plt.xlabel("x (m)")
-plt.ylabel("y (m)")
-plt.title(f"Gravity effect at z = {zp[k]} m")
-plt.axis("equal")
-plt.show()
+        fig, axes = plt.subplots(
+            nrows=3, ncols=2, figsize=(10, 12), constrained_layout=True
+        )
+
+        for k, z in enumerate(zp):
+
+            cs1 = axes[k, 0].contourf(
+                xg, yg, U[:, :, k],
+                levels=30, cmap="viridis",
+                vmin=Umin, vmax=Umax
+            )
+            fig.colorbar(cs1, ax=axes[k, 0])
+            axes[k, 0].set_title(f"Gravity potential (z = {z} m)")
+            axes[k, 0].set_ylabel("y (m)")
+            axes[k, 0].axis("equal")
+
+            cs2 = axes[k, 1].contourf(
+                xg, yg, g[:, :, k],
+                levels=30, cmap="seismic",
+                vmin=gmin, vmax=gmax
+            )
+            fig.colorbar(cs2, ax=axes[k, 1])
+            axes[k, 1].set_title(f"Gravity effect $g_z$ (z = {z} m)")
+            axes[k, 1].axis("equal")
+
+        axes[-1, 0].set_xlabel("x (m)")
+        axes[-1, 1].set_xlabel("x (m)")
+
+        fig.suptitle(title_prefix, fontsize=14)
+        plt.show()
+
+ 
+    plot_figure(x_25, y_25, U_25, g_25, "25 m Grid Spacing")
+    plot_figure(x_5, y_5, U_5, g_5, "5 m Grid Spacing")
+
+if __name__ == "__main__":
+    main()

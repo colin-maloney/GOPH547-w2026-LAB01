@@ -134,6 +134,7 @@ for k, z_obs in enumerate(zp_all):
 
 z0, z1, z100, z110 = 0, 1, 2, 3
 
+dgz_dz_0 = (gz[:, :, z1] - gz[:, :, z0]) / 1.0
 dgz_dz_100 = (gz[:, :, z110] - gz[:, :, z100]) / 10.0
 
 fig, axes = plt.subplots(2, 2, figsize=(12, 10), constrained_layout=True)
@@ -163,4 +164,101 @@ fig.suptitle(
     fontsize=16
 )
 
+plt.show() 
+
+def plot_fd_first_derivative(
+    xg, yg, dgz_dz,
+    z_level,
+    vmin=None, vmax=None,
+    cmap='seismic'
+):
+    """
+    Plot first-order finite-difference estimate of ∂gz/∂z.
+
+    Parameters
+    ----------
+    xg, yg : 2D arrays
+        Grid coordinates.
+    dgz_dz : 2D array
+        First-order FD vertical derivative of gz.
+    z_level : float
+        Elevation at which the derivative is evaluated (m).
+    vmin, vmax : float, optional
+        Color scale limits.
+    cmap : str
+        Matplotlib colormap.
+    """
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+
+    c = ax.contourf(
+        xg, yg, dgz_dz,
+        levels=20,
+        vmin=vmin, vmax=vmax,
+        cmap=cmap
+    )
+
+    ax.set_title(rf'First-Order FD $\partial g_z / \partial z$ at z = {z_level} m')
+    ax.set_xlabel('x (m)')
+    ax.set_ylabel('y (m)')
+    ax.set_aspect('equal')
+
+    fig.colorbar(c, ax=ax, label=r'$\partial g_z / \partial z$ (s$^{-2}$)')
+    plt.show()
+
+plot_fd_first_derivative(
+    x_5, y_5,
+    dgz_dz_0,
+    z_level=0
+)
+
+plot_fd_first_derivative(
+    x_5, y_5,
+    dgz_dz_100,
+    z_level=100
+)
+
+
+d2gz_dz2_0_fd = (gz[:, :, z1] - gz[:, :, z0]) / (1.0**2)
+d2gz_dz2_100_fd = (gz[:, :, z110] - gz[:, :, z100]) / (10.0**2)
+
+dx = x_5[0,1] - x_5[0,0]
+dy = y_5[1,0] - y_5[0,0] 
+
+def laplace_vertical(gz_slice, dx, dy):
+    d2gz_dx2 = np.gradient(np.gradient(gz_slice, dx, axis=1), dx, axis=1)
+    d2gz_dy2 = np.gradient(np.gradient(gz_slice, dy, axis=0), dy, axis=0)
+    return -(d2gz_dx2 + d2gz_dy2)
+
+d2gz_dz2_0_lap = laplace_vertical(gz[:, :, z0], dx, dy)
+d2gz_dz2_100_lap = laplace_vertical(gz[:, :, z100], dx, dy)
+
+fig, axes = plt.subplots(2, 1, figsize=(8, 12), constrained_layout=True)
+
+for ax, data, z in zip(
+    axes,
+    [d2gz_dz2_0_lap, d2gz_dz2_100_lap],
+    [0, 100]
+):
+    vmax = np.max(np.abs(data))
+    vmin = -vmax
+
+    c = ax.contourf(
+        x_5, y_5, data,
+        levels=20,
+        vmin=vmin, vmax=vmax,
+        cmap='seismic'
+    )
+    ax.set_title(rf'$\partial^2 g_z / \partial z^2$ at z = {z} m')
+    ax.set_xlabel('x (m)')
+    ax.set_ylabel('y (m)')
+    ax.set_aspect('equal')
+    fig.colorbar(c, ax=ax)
+
+fig.suptitle(
+    r'Second Vertical Derivative from Laplace Equation',
+    fontsize=16
+)
+
 plt.show()
+

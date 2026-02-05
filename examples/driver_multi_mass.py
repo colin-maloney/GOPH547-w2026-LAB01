@@ -6,6 +6,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from scipy.io import ( savemat, loadmat, ) 
 from src.goph547lab01.gravity import ( gravity_potential_point, gravity_effect_point)
 
+m = 1.0e7 
+G = 6.674e-11
+zp = [0.0, 10.0, 100.0]
+
+x_25, y_25 = np.meshgrid( np.linspace(-100.0, 100.0, 9), np.linspace(-100.0, 100.0, 9),) 
+
+x_5, y_5 = np.meshgrid(np.linspace(-100.0, 100.0, 41), np.linspace(-100.0, 100.0, 41),)
+
 
 def generate_mass_set():
 
@@ -39,20 +47,21 @@ savemat('mass_set_1.mat', {'mass_set_1': mass_set_1})
 savemat('mass_set_2.mat', {'mass_set_2': mass_set_2})
 savemat('mass_set_3.mat', {'mass_set_3': mass_set_3})
 
-def compute_fields(xg, yg, zp, xm, m):
+def compute_fields(xg, yg, zp, xm, masses):
     U = np.zeros((xg.shape[0], xg.shape[1], len(zp)))
     g = np.zeros_like(U)
 
     for k, z in enumerate(zp):
         for i in range(xg.shape[0]):
             for j in range(xg.shape[1]):
-                x_obs = np.array([xg[i, j], yg[i, j], z])
-                U[i, j, k] = gravity_potential_point(x_obs, xm, m)
-                g[i, j, k] = gravity_effect_point(x_obs, xm, m)
-
+                x_obs = np.array([xg[i, j], yg[i, j], z]) 
+                for mi in range(len(masses)): 
+                    U[i, j, k] += gravity_potential_point(x_obs, xm[mi], masses[mi]) 
+                    g[i, j, k] += gravity_effect_point(x_obs, xm[mi], masses[mi])
+                
     return U, g 
 
-def plot_figure(xg, yg, U, g, title_prefix):
+def plot_figure(xg, yg, U, g, title_prefix, Umin, Umax, gmin, gmax):
 
         fig, axes = plt.subplots(
             nrows=3, ncols=2, figsize=(10, 12), constrained_layout=True
@@ -60,7 +69,6 @@ def plot_figure(xg, yg, U, g, title_prefix):
 
         for k, z in enumerate(zp):
 
-            # --- Gravity potential (plasma) ---
             cs1 = axes[k, 0].contourf(
                 xg, yg, U[:, :, k],
                 levels=30,
@@ -75,7 +83,7 @@ def plot_figure(xg, yg, U, g, title_prefix):
             axes[k, 0].set_ylabel("y (m)")
             axes[k, 0].axis("equal")
 
-            # --- Gravity effect (viridis) ---
+            
             cs2 = axes[k, 1].contourf(
                 xg, yg, g[:, :, k],
                 levels=30,
@@ -97,30 +105,19 @@ def plot_figure(xg, yg, U, g, title_prefix):
 
 
 def main(): 
-    if ( not os.path.exists("examples/mass_set_0")
-        or not os.path.exists("examples/mass_set_1") 
-        or not os.path.exists("examples/mass_set_2")): 
+    masses, xm = generate_mass_set() 
 
-        generate_mass_set()  
+    U25, g25 = compute_fields(x_25,y_25, zp, masses, xm) 
 
-    d0 = loadmat('mass_set_0.mat') 
-    d1 = loadmat('mass_set_1.mat') 
-    d2 = loadmat('mass_set_2.mat')
+    U5, g5 = compute_fields(x_5,y_5, zp, masses, xm) 
 
-    mass_set_0 = d0["mass_set_0"].squeeze() 
-    mass_set_1 = d1["mass_set_1"].squeeze() 
-    mass_set_2 = d2["mass_set_2"].squeeze() 
-    xm = generate_mass_set()[1] 
+    Umin = min(U25.min(), U5.min())
+    Umax = max(U25.max(), U5.max())
+    gmin = min(g25.min(), g5.min())
+    gmax = max(g25.max(), g5.max())
 
-    U_5_m1, gz_5_m1 = compute_fields(np.zeros((x_5.shape[0], x_5.shape[1], len(zp))), 
-                                     np.zeros((x_5.shape[0], x_5.shape[1], len(zp))), 
-                                     x_5, y_5, mass_set_0, xm) 
-    
-    U_5_m2, gz_5_m2 = compute_fields(np.zeros((x_5.shape[0], x_5.shape[1], len(zp))), 
-                                     np.zeros((x_5.shape[0], x_5.shape[1], len(zp))), 
-                                     x_5, y_5, mass_set_1, xm) 
-    
-    U_5_m3, gz_5_m3 = compute_fields(np.zeros((x_5.shape[0], x_5.shape[1], len(zp))), 
-                                     np.zeros((x_5.shape[0], x_5.shape[1], len(zp))), 
-                                     x_5, y_5, mass_set_2, xm)
+    plot_figure(x_25, y_25, U25, g25, "25 m Grid – Multi-Mass", Umin, Umax, gmin, gmax)
+    plot_figure(x_5, y_5, U5, g5, "5 m Grid – Multi-Mass", Umin, Umax, gmin, gmax)
 
+if __name__ == "__main__":
+    main()

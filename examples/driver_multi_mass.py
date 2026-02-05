@@ -29,7 +29,7 @@ def generate_mass_set():
     xm[:4,1] = np.random.normal(0, 20, 4)
     xm[:4,2] = np.random.normal(-10,2,4)
 
-    masses[4] = m - np.sum(masses[:3])
+    masses[4] = m - np.sum(masses[:4])
     mass_position[0] = np.sum(masses[:4] * xm[:4,0])
     mass_position[1] = np.sum(masses[:4] * xm[:4,1])
     mass_position[2] = np.sum(masses[:4] * xm[:4,2])
@@ -108,9 +108,9 @@ def plot_figure(xg, yg, U, g, title_prefix, Umin, Umax, gmin, gmax):
 def main(): 
     masses, xm = generate_mass_set() 
 
-    U25, g25 = compute_fields(x_25,y_25, zp, masses, xm) 
+    U25, g25 = compute_fields(x_25,y_25, zp, xm, masses) 
 
-    U5, g5 = compute_fields(x_5,y_5, zp, masses, xm) 
+    U5, g5 = compute_fields(x_5,y_5, zp, xm, masses) 
 
     Umin = min(U25.min(), U5.min())
     Umax = max(U25.max(), U5.max())

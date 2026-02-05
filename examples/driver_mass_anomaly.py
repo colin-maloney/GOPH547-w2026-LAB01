@@ -55,7 +55,7 @@ axes[1].set_ylabel('z (m)')
 axes[1].set_xlim(-20,20)
 axes[1].set_ylim(0,-20)
 axes[1].set_title('Anomaly in yz-plane')
-fig.colorbar(c0, ax=axes[1])
+fig.colorbar(c1, ax=axes[1])
 
 c2 = axes[2].contourf(X_xy, Y_xy, rho_xy.T, levels=20)
 axes[2].plot(xa, ya, 'xk', markersize=3)
@@ -64,7 +64,7 @@ axes[2].set_ylabel('y (m)')
 axes[2].set_xlim(-20,20)
 axes[2].set_ylim(25,-25)
 axes[2].set_title('Anomaly in xy-plane')
-cbar2 = fig.colorbar(c0, ax=axes[2]) 
+cbar2 = fig.colorbar(c2, ax=axes[2]) 
 
 X_xz_min, X_xz_max = -20, 20 
 Z_xz_min, Z_xz_max = -20, 0 
@@ -97,3 +97,70 @@ m = net_mass
 
 x_5, y_5 = np.meshgrid(np.linspace(-100,100,41), np.linspace(-100, 100, 41)) 
 
+gz = np.zeros((x_5.shape[0], x_5.shape[1], len(zp)))
+
+for k, z_obs in enumerate(zp):
+    for i in range(x_5.shape[0]):
+        for j in range(x_5.shape[1]):
+            x = np.array([x_5[i, j], y_5[i, j], z_obs])
+            gz[i, j, k] = gravity_effect_point(x, anomaly_pos, m).item()
+
+gz_min = np.min(gz)
+gz_max = np.max(gz)
+
+fig, axes = plt.subplots(2, 1, figsize=(8, 12))
+
+for k, z_obs in enumerate(zp):
+    ax = axes[k]
+    c = ax.contourf(x_5, y_5, gz[:, :, k], levels=20, vmin=gz_min, vmax=gz_max, cmap = 'viridis_r')
+    ax.set_xlabel('x (m)')
+    ax.set_ylabel('y (m)')
+    ax.set_title(f'Gravitational Effect at z = {z_obs} m')
+    fig.colorbar(c, ax=ax)
+
+fig.suptitle('Anomaly Gravity Effect at \nGround and Airborne Observation', fontsize=16)
+plt.savefig('Anomaly Gravity Effect Forward Modelling.png')
+
+zp_all = [0.0, 1.0, 100.0, 110.0]
+
+gz = np.zeros((x_5.shape[0], x_5.shape[1], len(zp_all)))
+
+for k, z_obs in enumerate(zp_all):
+    for i in range(x_5.shape[0]):
+        for j in range(x_5.shape[1]):
+            x_obs = np.array([x_5[i, j], y_5[i, j], z_obs])
+            g_vec = gravity_effect_point(x_obs, anomaly_pos, m)
+            gz[i, j, k] = gravity_effect_point(x_obs, anomaly_pos, m)  
+
+z0, z1, z100, z110 = 0, 1, 2, 3
+
+dgz_dz_100 = (gz[:, :, z110] - gz[:, :, z100]) / 10.0
+
+fig, axes = plt.subplots(2, 2, figsize=(12, 10), constrained_layout=True)
+
+gz_min = gz.min()
+gz_max = gz.max()
+
+for k, z_obs in enumerate(zp_all):
+    ax = axes.flat[k]
+
+    c = ax.contourf(
+        x_5, y_5, gz[:, :, k],
+        levels=20,
+        vmin=gz_min, vmax=gz_max,
+        cmap='viridis_r'
+    )
+
+    ax.set_title(f'$g_z$ at z = {z_obs:.0f} m')
+    ax.set_xlabel('x (m)')
+    ax.set_ylabel('y (m)')
+    ax.set_aspect('equal')
+
+    fig.colorbar(c, ax=ax)
+
+fig.suptitle(
+    'Vertical Gravity Effect $g_z$ at Four Survey Elevations',
+    fontsize=16
+)
+
+plt.show()

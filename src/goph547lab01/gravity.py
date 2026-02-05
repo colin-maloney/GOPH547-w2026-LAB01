@@ -12,8 +12,8 @@ def gravity_potential_point(x, xm, m, G=6.674e-11):
     Retruns 
     gravity potential at x due to annomally at xm 
     """ 
-    x = np.array(x, dtype=float.flatten()) 
-    xm = np.array(xm, dtype=float.flatten()) 
+    x = np.array(x, dtype=float) 
+    xm = np.array(xm, dtype=float) 
     m = float(m) 
     G = float(G) 
     r = np.linalg.norm(x - xm) 
@@ -31,8 +31,8 @@ def gravity_effect_point(x, xm, m , G=6.674e-11):
     Retruns 
     gravity effect at x due to annomally at xm 
     """  
-    x = np.array(x, dtype=float.flatten()) 
-    xm = np.array(xm, dtype=float.flatten()) 
+    x = np.array(x, dtype=float) 
+    xm = np.array(xm, dtype=float) 
     m = float(m) 
     G = float(G) 
     r = np.linalg.norm(x - xm) 

@@ -56,8 +56,9 @@ def compute_fields(xg, yg, zp, xm, masses):
             for j in range(xg.shape[1]):
                 x_obs = np.array([xg[i, j], yg[i, j], z]) 
                 for mi in range(len(masses)): 
-                    U[i, j, k] += gravity_potential_point(x_obs, xm[mi], masses[mi]) 
-                    g[i, j, k] += gravity_effect_point(x_obs, xm[mi], masses[mi])
+                    mi_masses = masses[mi]
+                    U[i, j, k] += gravity_potential_point(x_obs, xm[mi], mi_masses) 
+                    g[i, j, k] += gravity_effect_point(x_obs, xm[mi], mi_masses)
                 
     return U, g 
 

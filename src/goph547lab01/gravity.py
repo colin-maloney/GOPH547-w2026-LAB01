@@ -29,7 +29,7 @@ def gravity_effect_point(x, xm, m , G=6.674e-11):
     Retruns 
     gravity effect at x due to annomally at xm 
     """  
-    x = np.array(x, dtype=float) 
-    xm = np.array(xm, dtype=float) 
+    x = np.array(x, dtype=float).reshape(3,) 
+    xm = np.array(xm, dtype=float).reshape(3,) 
     r = np.linalg.norm(x - xm) 
     return G * m * (x[2]-xm[2])/ r**3 
